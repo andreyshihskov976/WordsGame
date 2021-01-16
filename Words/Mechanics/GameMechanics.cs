@@ -15,7 +15,10 @@ namespace Words.Mechanics
         static string baseWord;
         static Dictionary<char, int> baseWordDictionary;
         static List<string> countedWords = new List<string>();
-        static List<char> numbers = new List<char>() { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
+        static List<char> symbols = new List<char>() { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 
+            '!', '@', '#', '$', '%', '^', '&', '(', ')', '-', '_', '+', '=', '/', '*', 
+            '.', '?', char.Parse("'"), '"', '}', '{', '<', '>', ',', ':', ';', '[', ']', '`',
+            '~', '№', '|', char.Parse(@"\") };
         static string inputedWord;
         
 
@@ -122,7 +125,7 @@ namespace Words.Mechanics
             if (baseWord.Length > 0)
                 if (minLength <= baseWord.Length && baseWord.Length <= maxLength)
                 {
-                    foreach (char num in numbers)
+                    foreach (char num in symbols)
                         if (baseWord.Any(letter => letter == num))
                         {
                             Console.Clear();
