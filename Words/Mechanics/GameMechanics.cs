@@ -9,29 +9,44 @@ namespace Words.Mechanics
 {
     static class GameMechanics
     {
-        static int minLength, maxLength, roundDuration, timeLeft;
+        const double interval = 1000;
+        const int defaultMinLength = 8;
+        const int defaultMaxLength = 8;
+        const int defaultRoundDuration = 8;
+        static bool isAlive;
+        static int minLength;
+        static int maxLength;
+        static int roundDuration;
+        static int timeLeft;
         static Timer timer;
-        static Thread mainGameThread;
         static string baseWord;
         static Dictionary<char, int> baseWordDictionary;
+        static string inputedWord;
         static List<string> countedWords = new List<string>();
+
         static List<char> symbols = new List<char>() { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 
             '!', '@', '#', '$', '%', '^', '&', '(', ')', '-', '_', '+', '=', '/', '*', 
             '.', '?', char.Parse("'"), '"', '}', '{', '<', '>', ',', ':', ';', '[', ']', '`',
             '~', '№', '|', char.Parse(@"\") };
-        static string inputedWord;
         
-
-        public static void DefaultSettings()
+        enum SettingsMenuActions
         {
-            minLength = 8;
-            maxLength = 30;
-            timer = new Timer(1000);
-            timer.Elapsed += Timer_Tick;
-            timer.AutoReset = true;
-            roundDuration = timeLeft = 5;
+            ChangeMinLength = 1,
+            ChangeMaxLength = 2,
+            ChangeRoundDuration = 3,
+            ExitSettingsMenu = 4
         }
-        public static void Settings()
+
+        public static void SetDefaultSettings()
+        {
+            minLength = defaultMinLength;
+            maxLength = defaultMaxLength;
+            timer = new Timer(interval);
+            timer.Elapsed += TimerTick;
+            timer.AutoReset = true;
+            roundDuration = timeLeft = defaultRoundDuration;
+        }
+        public static void SetCustomSettings()
         {
             bool exit = false;
             while (!exit)
@@ -41,9 +56,9 @@ namespace Words.Mechanics
                 try
                 {
                     int key = int.Parse(Console.ReadLine());
-                    switch (key)
+                    switch ((SettingsMenuActions)key)
                     {
-                        case 1:
+                        case SettingsMenuActions.ChangeMinLength:
                             while (true)
                             {
                                 try
@@ -64,7 +79,7 @@ namespace Words.Mechanics
                                 }
                             }
                             break;
-                        case 2:
+                        case SettingsMenuActions.ChangeMaxLength:
                             while (true)
                             {
                                 try
@@ -85,7 +100,7 @@ namespace Words.Mechanics
                                 }
                             }
                             break;
-                        case 3:
+                        case SettingsMenuActions.ChangeRoundDuration:
                             while (true)
                             {
                                 try
@@ -107,7 +122,7 @@ namespace Words.Mechanics
                                 }
                             }
                             break;
-                        case 4:
+                        case SettingsMenuActions.ExitSettingsMenu:
                             exit = !exit;
                             Console.Clear();
                             Console.WriteLine("Параметры сохранены." + '\n' + "Нажмите любую клавишу для продолжения.");
@@ -192,58 +207,55 @@ namespace Words.Mechanics
 
         static void Round()
         {
-            while (true)
+            Console.Clear();
+            timer.Start();
+            Console.WriteLine('\n' + "Основное слово: {0}" + '\n' +
+                "Введите полученное слово:", baseWord);
+            inputedWord = Console.ReadLine();
+            int kol = 0;
+            if (inputedWord.Length > 0)
             {
-                Console.Clear();
-                timer.Start();
-                Console.WriteLine('\n' + "Основное слово: {0}" + '\n' +
-                    "Введите полученное слово:", baseWord);
-                inputedWord = Console.ReadLine();
-                int kol = 0;
-                if (inputedWord.Length > 0)
+                foreach (var c in inputedWord.ToUpper().Distinct())
                 {
-                    foreach (var c in inputedWord.ToUpper().Distinct())
+                    if (baseWordDictionary.ContainsKey(c))
+                        if (inputedWord.ToUpper().Count(letter => letter == c) <= baseWordDictionary[c])
+                            kol++;
+                }
+                if (kol == inputedWord.Distinct().Count())
+                {
+                    if (!countedWords.Any(item => item == inputedWord))
                     {
-                        if (baseWordDictionary.ContainsKey(c))
-                            if (inputedWord.ToUpper().Count(letter => letter == c) <= baseWordDictionary[c])
-                                kol++;
-                    }
-                    if (kol == inputedWord.Distinct().Count())
-                    {
-                        if (!countedWords.Any(item => item == inputedWord))
-                        {
-                            countedWords.Add(inputedWord);
-                            Console.WriteLine("Слово засчитано.");
-                            timer.Stop();
-                            timeLeft = roundDuration;
-                            Console.ReadKey();
-                            continue;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Такое слово уже было.");
-                            Console.ReadKey();
-                            continue;
-                        }
+                        countedWords.Add(inputedWord);
+                        Console.WriteLine("Слово засчитано.");
+                        timer.Stop();
+                        timeLeft = roundDuration;
+                        Console.ReadKey();
+                        return;
                     }
                     else
                     {
-                        Console.WriteLine("Слово не засчитано.");
+                        Console.WriteLine("Такое слово уже было.");
                         Console.ReadKey();
-                        continue;
+                        return;
                     }
+                }
+                else
+                {
+                    Console.WriteLine("Слово не засчитано.");
+                    Console.ReadKey();
+                    return;
                 }
             }
         }
 
-        public static void MainGame()
+        public static void StartGame()
         {
-            mainGameThread = new Thread(new ThreadStart(Round));
-            mainGameThread.Start();
-            mainGameThread.Join();
+            isAlive = true;
+            while (isAlive)
+                Round();
         }
 
-        private static void Timer_Tick(Object source, ElapsedEventArgs e)
+        private static void TimerTick(Object source, ElapsedEventArgs e)
         {
             Console.Beep();
             int currentLineCursorTop = Console.CursorTop;
@@ -257,15 +269,14 @@ namespace Words.Mechanics
             Console.CursorVisible = true;
             timeLeft -= 1;
             if (timeLeft == -1)
-                Stop_Round();
+                StopRound();
         }
 
-        private static void Stop_Round()
+        private static void StopRound()
         {
+            isAlive = false;
             timer.Stop();
             timeLeft = roundDuration;
-            mainGameThread.Abort();
-            mainGameThread = null;
             Console.Clear();
             Console.WriteLine("Вы смогли составить: {0} слов(-а) из {1}", countedWords.Count, baseWord);
             foreach (var word in countedWords)

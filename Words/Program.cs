@@ -5,11 +5,18 @@ namespace Words
 {
     class Program
     {
+        enum MainMenuActions
+        {
+            SetCustomSettings = 1,
+            StartGame = 2,
+            ExitGame = 3
+        }
+
         static void Main(string[] args)
         {
             Console.WriteLine("Добро пожаловать в игру 'Слова'." + '\n' + "Для продолжения нажмите любую клавишу:");
             Console.ReadKey();
-            GameMechanics.DefaultSettings();
+            GameMechanics.SetDefaultSettings();
             while (true)
             {
                 Console.Clear();
@@ -17,16 +24,16 @@ namespace Words
                 try
                 {
                     int key = int.Parse(Console.ReadLine());
-                    switch (key)
+                    switch ((MainMenuActions)key)
                     {
-                        case 1:
-                            GameMechanics.Settings();
+                        case MainMenuActions.SetCustomSettings:
+                            GameMechanics.SetCustomSettings();
                             break;
-                        case 2:
+                        case MainMenuActions.StartGame:
                             GameMechanics.BaseWordInput();
-                            GameMechanics.MainGame();
+                            GameMechanics.StartGame();
                             break;
-                        case 3:
+                        case MainMenuActions.ExitGame:
                             Environment.Exit(0);
                             break;
                         default:
