@@ -1,5 +1,5 @@
 ﻿using System;
-using Words.Mechanics;
+using static Words.Mechanics.GameMechanics;
 
 namespace Words
 {
@@ -14,24 +14,22 @@ namespace Words
 
         static void Main(string[] args)
         {
+            int Action;
             Console.WriteLine("Добро пожаловать в игру 'Слова'." + '\n' + "Для продолжения нажмите любую клавишу:");
             Console.ReadKey();
-            GameMechanics.SetDefaultSettings();
+            SetDefaultSettings();
             while (true)
             {
                 Console.Clear();
                 Console.WriteLine("Нажмите 1 для изменения настроек." + '\n' + "Нажмите 2 для начала игры." + '\n' + "Нажмите 3 для выхода из игры.");
-                try
-                {
-                    int key = int.Parse(Console.ReadLine());
-                    switch ((MainMenuActions)key)
+                if (Parse(Console.ReadLine(), out Action))
+                    switch ((MainMenuActions)Action)
                     {
                         case MainMenuActions.SetCustomSettings:
-                            GameMechanics.SetCustomSettings();
+                            SetCustomSettings();
                             break;
                         case MainMenuActions.StartGame:
-                            GameMechanics.BaseWordInput();
-                            GameMechanics.StartGame();
+                            StartGame();
                             break;
                         case MainMenuActions.ExitGame:
                             Environment.Exit(0);
@@ -43,14 +41,7 @@ namespace Words
                             Console.ReadKey();
                             break;
                     }
-                }
-                catch (FormatException)
-                {
-                    Console.Clear();
-                    Console.Beep();
-                    Console.WriteLine("Ошибка: 'Вводимое значение должно быть целым числом.'" + '\n' + "Нажмите любую клавишу для продолжения и повторите ввод.");
-                    Console.ReadKey();
-                }
+
             }
         }
     }

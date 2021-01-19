@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Timers;
 using Timer = System.Timers.Timer;
@@ -11,8 +12,8 @@ namespace Words.Mechanics
     {
         const double interval = 1000;
         const int defaultMinLength = 8;
-        const int defaultMaxLength = 8;
-        const int defaultRoundDuration = 8;
+        const int defaultMaxLength = 30;
+        const int defaultRoundDuration = 10;
         static bool isAlive;
         static int minLength;
         static int maxLength;
@@ -23,11 +24,6 @@ namespace Words.Mechanics
         static Dictionary<char, int> baseWordDictionary;
         static string inputedWord;
         static List<string> countedWords = new List<string>();
-
-        static List<char> symbols = new List<char>() { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 
-            '!', '@', '#', '$', '%', '^', '&', '(', ')', '-', '_', '+', '=', '/', '*', 
-            '.', '?', char.Parse("'"), '"', '}', '{', '<', '>', ',', ':', ';', '[', ']', '`',
-            '~', '№', '|', char.Parse(@"\") };
         
         enum SettingsMenuActions
         {
@@ -46,79 +42,75 @@ namespace Words.Mechanics
             timer.AutoReset = true;
             roundDuration = timeLeft = defaultRoundDuration;
         }
+
+        public static bool Parse(string inputString, out int outputInt)
+        {
+            int tryParse;
+            if (int.TryParse(inputString, out tryParse))
+            {
+                outputInt = tryParse;
+                return true;
+            }
+            else
+            {
+                Console.Clear();
+                Console.Beep();
+                Console.WriteLine("Ошибка: 'Вводимое значение должно быть целым числом.'" + '\n' +
+                                        "Нажмите любую клавишу для продолжения и повторите ввод.");
+                Console.ReadKey();
+                outputInt = 0;
+                return false;
+            }
+        }
+
         public static void SetCustomSettings()
         {
+            int Action;
             bool exit = false;
             while (!exit)
             {
                 Console.Clear();
                 Console.WriteLine("Нажмите 1 для изменения минимальной длины слова." + '\n' + "Нажмите 2 для изменения максимальной длины слова." + '\n' + "Нажмите 3 для изменения длительности раунда." + '\n' + "Нажмите 4 для возврата в главное меню.");
-                try
+                if (!Parse(Console.ReadLine(), out Action))
+                    continue;
+                else
                 {
-                    int key = int.Parse(Console.ReadLine());
-                    switch ((SettingsMenuActions)key)
+                    switch ((SettingsMenuActions)Action)
                     {
                         case SettingsMenuActions.ChangeMinLength:
                             while (true)
                             {
-                                try
-                                {
-                                    Console.Clear();
-                                    Console.WriteLine("Введите минимальную длину слова:");
-                                    minLength = int.Parse(Console.ReadLine());
-                                    break;
-                                }
-                                catch (FormatException)
-                                {
-                                    Console.Clear();
-                                    Console.Beep();
-                                    Console.WriteLine("Ошибка: 'Минимальная длина слова должна указываться целым числом.'" + '\n' +
-                                        "Нажмите любую клавишу для продолжения и повторите ввод.");
-                                    Console.ReadKey();
+                                Console.Clear();
+                                Console.WriteLine("Введите минимальную длину слова:");
+                                if (!Parse(Console.ReadLine(), out minLength))
                                     continue;
-                                }
+                                else
+                                    break;
                             }
                             break;
                         case SettingsMenuActions.ChangeMaxLength:
                             while (true)
                             {
-                                try
-                                {
-                                    Console.Clear();
-                                    Console.WriteLine("Введите максимальную длину слова:");
-                                    maxLength = int.Parse(Console.ReadLine());
-                                    break;
-                                }
-                                catch (FormatException)
-                                {
-                                    Console.Clear();
-                                    Console.Beep();
-                                    Console.WriteLine("Ошибка: 'Максимальная длина слова должна указываться целым числом.'" + '\n' +
-                                        "Нажмите любую клавишу для продолжения и повторите ввод.");
-                                    Console.ReadKey();
+
+                                Console.Clear();
+                                Console.WriteLine("Введите максимальную длину слова:");
+                                if (!Parse(Console.ReadLine(), out maxLength))
                                     continue;
-                                }
+                                else
+                                    break;
                             }
                             break;
                         case SettingsMenuActions.ChangeRoundDuration:
                             while (true)
                             {
-                                try
+                                Console.Clear();
+                                Console.WriteLine("Задайте длительность раунда в секундах:");
+                                if (!Parse(Console.ReadLine(), out maxLength))
+                                    continue;
+                                else
                                 {
-                                    Console.Clear();
-                                    Console.WriteLine("Задайте длительность раунда в секундах:");
-                                    roundDuration = int.Parse(Console.ReadLine());
                                     timeLeft = roundDuration;
                                     break;
-                                }
-                                catch (FormatException)
-                                {
-                                    Console.Clear();
-                                    Console.Beep();
-                                    Console.WriteLine("Ошибка: 'Длительность раунда должна указываться целым числом.'" + '\n' +
-                                        "Нажмите любую клавишу для продолжения и повторите ввод.");
-                                    Console.ReadKey();
-                                    continue;
                                 }
                             }
                             break;
@@ -135,14 +127,6 @@ namespace Words.Mechanics
                             Console.ReadKey();
                             continue;
                     }
-                }
-                catch (FormatException)
-                {
-                    Console.Clear();
-                    Console.Beep();
-                    Console.WriteLine("Ошибка: 'Вводимое значение должно быть целым числом.'" + '\n' + "Нажмите любую клавишу для продолжения и повторите ввод.");
-                    Console.ReadKey();
-                    continue;
                 }
             }
         }
@@ -251,6 +235,7 @@ namespace Words.Mechanics
         public static void StartGame()
         {
             isAlive = true;
+            BaseWordInput();
             while (isAlive)
                 Round();
         }
@@ -285,16 +270,10 @@ namespace Words.Mechanics
         }
         private static bool CheckBaseWord()
         {
-            bool HaveSymbols = false;
-            foreach (char num in symbols)
-            {
-                if (baseWord.Any(letter => letter == num))
-                {
-                    HaveSymbols = true;
-                    break;
-                }
-            }
-            return HaveSymbols;
+            if (Regex.Match(baseWord, @"^[а-яА-Я]+$").Success || Regex.Match(baseWord, @"^[A-Za-z]+$").Success)
+                return false;
+            else
+                return true;
         }
     }
 }
